@@ -23,8 +23,8 @@ val settings = Defaults.coreDefaultSettings ++ Seq(
 resolvers += Resolver.jcenterRepo
 
 val dependencies = Seq(
-  "com.hazelcast" % "hazelcast" % "4.1",
-  //"com.hazelcast" %% "hazelcast-scala" % "3.12.1" withSources(),
+  "com.hazelcast" % "hazelcast" % "3.12.1",
+  "com.hazelcast" %% "hazelcast-scala" % "3.12.1" withSources(),
   "com.google.code.findbugs" % "jsr305" % "3.0.2" % "compile" // prevent errors on missing Nullable dependency
 )
   
