@@ -49,7 +49,7 @@ class Demo {
     hazelcast.getCluster.getMembers.asScala.map(m => s"${location(m)} ${m.getAddress}").mkString("\n")
   }
 
-  def broadcast(message: String): String = {
+  def send(message: String): String = {
     channel.publish(Execute(s"Received from $this", onSender = false, () => prompt(s"Message: '$message'")))
     ok
   }
@@ -120,6 +120,11 @@ class Demo {
     value.toString
   }
 
+  def getValue(counter: String): String = {
+    val value = hazelcast.getCPSubsystem.getAtomicLong(counter).get
+    value.toString
+  }
+
   def exit(): String = {
     hazelcast.shutdown()
     shutdown = true
@@ -158,7 +163,7 @@ object Demo {
 
     lazy val commands = Seq(
       Command("nodes")(demo.listNodes),
-      Command("broadcast", "message")(demo.broadcast),
+      Command("send", "message")(demo.send),
       Command("log", "level")(demo.setLogLevel),
       Command("login", "user")(demo.login),
       Command("login", "user", "ttl")(demo.login),
@@ -169,6 +174,7 @@ object Demo {
       Command("unlock", "key")(demo.unlock),
       Command("locks")(demo.listLocks),
       Command("increment", "counter")(demo.increment),
+      Command("get", "counter")(demo.getValue),
       Command("timed", "flag")(setTimed),
       Command("exit")(demo.exit),
       Command("help")(() => listCommands)
