@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.{ Level, Logger }
 import com.hazelcast.cluster.{ Member, MembershipEvent, MembershipListener }
 import com.hazelcast.core.Hazelcast
+import com.hazelcast.cp.IAtomicLong
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -106,7 +107,8 @@ class Demo {
     else if (!locks.tryLock(key)) "Locked by other node"
     else {
       locks.remove(key)
-      locks.unlock(key)
+      locks.unlock(key) // for tryLock
+      locks.unlock(key) // for original lock
       ok
     }
 
@@ -116,12 +118,12 @@ class Demo {
   }
 
   def increment(counter: String): String = {
-    val value = hazelcast.getCPSubsystem.getAtomicLong(counter).incrementAndGet
+    val value = getCounter(counter).incrementAndGet
     value.toString
   }
 
   def getValue(counter: String): String = {
-    val value = hazelcast.getCPSubsystem.getAtomicLong(counter).get
+    val value = getCounter(counter).get
     value.toString
   }
 
@@ -134,6 +136,8 @@ class Demo {
   def isRunning: Boolean = !shutdown
 
   override def toString: String = hazelcast.getCluster.getLocalMember.getAddress.toString
+
+  private def getCounter(counter: String): IAtomicLong = hazelcast.getCPSubsystem.getAtomicLong(counter)
 }
 
 object Demo {
