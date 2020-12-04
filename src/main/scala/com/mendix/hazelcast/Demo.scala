@@ -95,9 +95,9 @@ class Demo {
     }
 
   // alternatively use hazelcast.getCPSubsystem.getLock(key).lock()
-  def lock(key: String, user: String): String = {
+  def lock(key: String, owner: String): String = {
     locks.lock(key)
-    locks.put(key, user)
+    locks.put(key, owner)
     ok
   }
 
@@ -112,7 +112,7 @@ class Demo {
 
   def listLocks(): String = {
     def location(key: String): String = locationString(local = locks.localKeySet.contains(key))
-    locks.asScala.collect { case (key, user) if locks.isLocked(key) => s"${location(key)} $key ($user)" }.mkString("\n")
+    locks.asScala.collect { case (key, owner) if locks.isLocked(key) => s"${location(key)} $key ($owner)" }.mkString("\n")
   }
 
   def increment(counter: String): String = {
@@ -170,7 +170,7 @@ object Demo {
       Command("logout", "user")(demo.logout),
       Command("active", "user")(demo.setActive),
       Command("sessions")(demo.listSessions),
-      Command("lock", "key", "user")(demo.lock),
+      Command("lock", "key", "owner")(demo.lock),
       Command("unlock", "key")(demo.unlock),
       Command("locks")(demo.listLocks),
       Command("increment", "counter")(demo.increment),
