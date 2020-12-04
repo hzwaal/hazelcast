@@ -15,8 +15,10 @@ import scala.util.control.NonFatal
 class Demo {
   import Demo._
 
+  Demo.setLogLevel(Level.SEVERE)
+
   private val hazelcast = Hazelcast.newHazelcastInstance
-  private val channel = hazelcast.getTopic[String]("channel")
+  private val channel = hazelcast.getTopic[Execute]("channel")
   private val sessions = hazelcast.getMap[String, Session]("sessions")
   private val locks = hazelcast.getMap[String, String]("locks")
   private var shutdown = false
@@ -29,12 +31,16 @@ class Demo {
   })
 
   channel.addMessageListener { message =>
-    if (message.getPublishingMember != hazelcast.getCluster.getLocalMember)
-      prompt(s"Node ${message.getPublishingMember.getAddress} sent: '${message.getMessageObject}'")
+    val execute = message.getMessageObject
+    if (execute.onSender || (message.getPublishingMember != hazelcast.getCluster.getLocalMember)) {
+      execute.action()
+      prompt(s"${execute.description} on request of ${message.getPublishingMember.getAddress}")
+    }
   }
 
   def setLogLevel(level: String): String = {
-    Logger.getLogger("com.hazelcast").setLevel(Level.parse(level.toUpperCase)) // TODO: why doesn't this work?
+    val logLevel = Level.parse(level.toUpperCase)
+    channel.publish(Execute(s"Changed log level to '$level'", onSender = true, () => Demo.setLogLevel(logLevel)))
     ok
   }
 
@@ -44,7 +50,7 @@ class Demo {
   }
 
   def broadcast(message: String): String = {
-    channel.publish(message)
+    channel.publish(Execute(s"Received from $this", onSender = false, () => prompt(s"Message: '$message'")))
     ok
   }
 
@@ -121,14 +127,23 @@ class Demo {
   }
 
   def isRunning: Boolean = !shutdown
+
+  override def toString: String = hazelcast.getCluster.getLocalMember.getAddress.toString
 }
 
 object Demo {
   private val ok = "OK"
 
+  private case class Execute(description: String, onSender: Boolean, action: () => Unit)
+
   private def prompt(message: String = ok): Unit = {
     Console.print(s"$message\ndemo> ")
     Console.flush()
+  }
+
+  private def setLogLevel(level: Level): Unit = {
+    Logger.getLogger("com.hazelcast").setLevel(level)
+    Logger.getLogger("").getHandlers.foreach(_.setLevel(level))
   }
 
   def main(args: Array[String]): Unit = {
@@ -162,7 +177,7 @@ object Demo {
     def listCommands: String =
       commands.sortBy(_.keyword).map(c => s"- $c").mkString("\n")
 
-    prompt()
+    prompt(s"This node is $demo")
     while (demo.isRunning) {
       try {
         val line = Console.in.readLine().trim
@@ -177,7 +192,7 @@ object Demo {
         prompt(response)
       } catch {
         case NonFatal(e) =>
-          prompt(s"OOPS: ${e.getMessage}}")
+          prompt(s"OOPS: ${e.getMessage}")
       }
     }
   }

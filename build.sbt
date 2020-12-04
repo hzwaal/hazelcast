@@ -9,7 +9,6 @@ val settings = Defaults.coreDefaultSettings ++ Seq(
   run / connectInput := true,
   run / outputStrategy := Some(StdoutOutput),
   run / javaOptions ++= Seq(
-    "-Djava.util.logging.config.file=logging.properties",
     "--add-modules", "java.se",
     "--add-exports", "java.base/jdk.internal.ref=ALL-UNNAMED",
     "--add-opens", "java.base/java.lang=ALL-UNNAMED",
