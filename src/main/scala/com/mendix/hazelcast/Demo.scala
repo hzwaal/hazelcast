@@ -65,9 +65,9 @@ class Demo {
     }
   }
 
-  def login(user: String, ttl: String): String = {
+  def login(user: String, ttl: Long): String = {
     val now = LocalDateTime.now
-    sessions.putIfAbsent(user, Session(now, user, now), ttl.toInt.seconds)
+    sessions.putIfAbsent(user, Session(now, user, now), ttl.seconds)
     ok
   }
 
